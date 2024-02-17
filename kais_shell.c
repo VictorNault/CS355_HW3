@@ -12,6 +12,10 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include "common.h"
+#include <pthread.h>
+
+
+pthread_mutex_t mutex; //defining the mutex
 
 char * delimiters = " \n";
 int cmdLen  = 0;
@@ -24,6 +28,51 @@ void sigStopHandler(int sig){
 void sigIntHandler(int sig){
     signal(SIGINT, sigIntHandler);
 }
+
+void bg(int pid){
+    //check in the linked list to see if the process is suspended
+    //int is_suspended = 
+    // if(is_suspended){
+    //     kill(pid,SIGCONT);
+    //     tcsetpgrp(NULL,pid); //set a process to be in background
+    // }
+    //else don't do anything because process is already running in background
+}
+
+void fg(int pid){
+    //check in the linked list to see if the process is suspended
+    //int is_suspended = 
+    // if(is_suspended){
+    //     kill(pid,SIGCONT);
+    //     tcsetpgrp(1,pid); //set a process to run in foreground
+    // }
+    // else{
+    //     tcsetpgrp(1,pid);
+    // }
+    //waitpid(pid,NULL,0);
+}
+
+void sigchldhandler(int signal, siginfo_t *info, void *ucontext){
+    if(info->si_code == CLD_EXITED || info->si_code == CLD_DUMPED){ //si_code in the info struct contains if the child is suspended, exited, or interrupted...
+        //Entering critical region
+        pthread_mutex_lock(&mutex);
+        //***delete node in linkedlist
+        pthread_mutex_unlock(&mutex);
+    }
+    else if(info->si_code == CLD_STOPPED){
+        //Entering critical region
+        pthread_mutex_lock(&mutex);
+        //***update flag in node
+        pthread_mutex_unlock(&mutex);
+    }
+    else if(info->si_code == CLD_CONTINUED){
+        //Entering critical region
+        pthread_mutex_lock(&mutex);
+        //***update flag in node
+        pthread_mutex_unlock(&mutex);
+    }
+}
+
 
 char ** splitStringFromDelims(char * stringToSplit, int * cmdLen, int * background){
     *background = 0; 
@@ -76,6 +125,7 @@ char ** splitStringFromDelims(char * stringToSplit, int * cmdLen, int * backgrou
     return tokenList;
 }
 
+void emptySigHandler(){}
 
 int getNthHistory(int n, char *** currentCommand, int top, int * cmdlen, int * background){
         HISTORY_STATE * history = history_get_history_state();
@@ -118,6 +168,19 @@ int main(){
     int status;
     signal(SIGINT, sigIntHandler);
     signal(SIGTSTP, sigStopHandler);
+    sigset_t *sigset = (sigset_t*) malloc(sizeof(sigset_t));
+    sigfillset(sigset);
+    signal(SIGINT, sigIntHandler);
+    signal(SIGTSTP, sigStopHandler);
+    struct sigaction my_sigaction; //declaring the struct that contains the pointer to sighandler with extra information and flag
+    my_sigaction.sa_sigaction = sigchldhandler; //setting the sighandler 
+    my_sigaction.sa_flags = SA_SIGINFO; //setting the flag to say we want more information
+    my_sigaction.sa_mask = *sigset;
+    sigaction(SIGCHLD,&my_sigaction,NULL); //this is like signal(), setting a handler for SIGCHLD
+    //ignoring all catchacble signals
+    for(int i = 0; i <= SIGRTMAX; i++){
+        signal(i,emptySigHandler);
+    }
 
     //attempt to do get and set histsize environment variable.
 
