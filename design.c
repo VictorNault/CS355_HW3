@@ -36,6 +36,12 @@ void sigtstp(int sig){
     //send the process running in the foreground into the background
 }
 
+void sighandler(int sig){
+    //don't do anything if the user press Ctrl+C 
+}
+
+//in the sigchldhandler, we will use mutexes to protect the critical region, which is
+//whenever the linkedlist containing process info is modified
 void sigchldhandler(siginfo_t *siginfo, void *context){
     //if child is exited, or dumped
         //Entering CR
@@ -56,6 +62,8 @@ void sigchldhandler(siginfo_t *siginfo, void *context){
 int main(){
     //define sigaction to mask all signals (sa_mask)
 
+    //set up sighandler for SIGINT 
+
     //define a linked list buffer for potential multiple commands in case of semicolon
 
     while(TRUE){
@@ -65,7 +73,10 @@ int main(){
 
             //get the command string using readline
 
+            //if the command string is null (Ctrl+D), exit the shell
+
             //parse the command string, store tokens in an array
+
 
         //fork off a child of a unique process group
 
@@ -83,7 +94,6 @@ int main(){
 
             //wait for child only if child is in foreground
         }
-
     }
 }
 
