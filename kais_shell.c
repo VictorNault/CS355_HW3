@@ -1,47 +1,71 @@
+#define _XOPEN_SOURCE 700
 #include <regex.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <termios.h>
+#include <unistd.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <sys/types.h>  
 #include <sys/wait.h>
 #include <signal.h>
+#include "common.h"
 
 char * delimiters = " \n";
 int cmdLen  = 0;
 
-void sigStopHandler(int sig){};
 
-void sigIntHandler(int sig){
-    printf("^C\n");
+void sigStopHandler(int sig){
+    signal(SIGSTOP, sigStopHandler);
 }
 
-char ** splitStringFromDelims(char * stringToSplit){
+void sigIntHandler(int sig){
+    signal(SIGINT, sigIntHandler);
+}
+
+char ** splitStringFromDelims(char * stringToSplit, int * cmdLen, int * background){
+    *background = 0; 
     //counting the number of arguments passed by calling strtok twice (not the most efficient :()
     char * stringToSplitCopy = malloc( sizeof(char) * (strlen(stringToSplit)+1));
     strcpy(stringToSplitCopy, stringToSplit); 
     char * token = strtok(stringToSplitCopy,delimiters);
-    cmdLen = 0;
+    *cmdLen = 0;
     while (token != NULL){
-        cmdLen++;
+        (*cmdLen)++;
         token = strtok(NULL,delimiters);
     }
 
-    if (cmdLen == 0){ //nothing was passed
+    if (*cmdLen == 0){ //nothing was passed
         return NULL;
     }
 
-    char ** tokenList = (char **) malloc(sizeof(char *) * cmdLen);
+    char ** tokenList = (char **) malloc(sizeof(char *) * (*cmdLen));
 
     token = strtok(stringToSplit, delimiters);
     tokenList[0] = (char *) malloc(sizeof(char)* (strlen(token)+1));
     strcpy(tokenList[0],token);
-    for (int i = 1; i < cmdLen; i++){
+    for (int i = 1; i < *cmdLen; i++){
         token = strtok(NULL, delimiters);
         tokenList[i] = (char *) malloc(sizeof(char)* (strlen(token)+1));
         strcpy(tokenList[i],token);
+    }
+
+
+    //checking if it should be backgrounded:
+    if (strcmp(tokenList[(*cmdLen)-1],"&") == 0 && *cmdLen > 1 ){
+        *background = TRUE;
+        tokenList[(*cmdLen)-1] = NULL;
+        // char ** temp = (char ** ) malloc(sizeof(char *) * ((*cmdLen)-1));
+        // for(int i = 0; i < *cmdLen; i++){
+
+        // }
+    }
+
+    else if(tokenList[(*cmdLen)-1][strlen(tokenList[(*cmdLen)-1])-1] == '&' && strlen(tokenList[(*cmdLen)-1]) > 1){
+        tokenList[(*cmdLen)-1][strlen(tokenList[(*cmdLen)-1])-1] = '\0';
+
     }
 
     // for (int i = 0; i < count; i++){
@@ -53,7 +77,7 @@ char ** splitStringFromDelims(char * stringToSplit){
 }
 
 
-int getNthHistory(int n, char *** currentCommand, int top){
+int getNthHistory(int n, char *** currentCommand, int top, int * cmdlen, int * background){
         HISTORY_STATE * history = history_get_history_state();
         HIST_ENTRY ** histlist = history_list();
         char * commandToCopy;
@@ -81,7 +105,7 @@ int getNthHistory(int n, char *** currentCommand, int top){
 
         free(*currentCommand);
         printf("%s\n",commandCopy);
-        *currentCommand = splitStringFromDelims(commandCopy);
+        *currentCommand = splitStringFromDelims(commandCopy, cmdlen, background);
         for (int i = 0; i < cmdLen; i++){
             // printf("\n%d: %s\n",i,currentCommand[i]);
         }
@@ -114,7 +138,7 @@ int main(){
     int compare = regcomp(&nregex,"^![0-9]+$",REG_EXTENDED); //match numbers after ! \b is word boundry
     int dashCompare = regcomp(&dashNRegex,"^!-[0-9]+$",REG_EXTENDED);
     while(1){
-        int addToHistory = 1;
+        int addToHistory = TRUE;
 
         char * commandToParse = readline("prompt$ \n");  
         if (!commandToParse){
@@ -125,15 +149,15 @@ int main(){
         char * commandCopy = malloc( sizeof(char) * (strlen(commandToParse)+1)); // making a copy because of how readline handles history
         // beacuse strtok replaces with null byte
         strcpy(commandCopy, commandToParse);
-
-        char ** currentCommand = splitStringFromDelims(commandCopy);
+        int commandLength; //split string from delim
+        int background;
+        char ** currentCommand = splitStringFromDelims(commandCopy, &commandLength, &background);
         free(commandCopy);
-
-        int * commandLength = &cmdLen; //realizing this is kind of pointless but and i shou
+        
         if (currentCommand == NULL) continue;
 
         if (strcmp(currentCommand[0],"exit") == 0) {
-            for (int i = 0; i < *commandLength; i++){
+            for (int i = 0; i < commandLength; i++){
                 free(currentCommand[i]);
             }
             free(currentCommand);
@@ -161,7 +185,7 @@ int main(){
                 // free_history_entry(histlist[i]);
                 
             }
-             for (int i = 0; i < *commandLength; i++){
+             for (int i = 0; i < commandLength; i++){
             free(currentCommand[i]);
             }   
 
@@ -170,9 +194,9 @@ int main(){
             free(commandToParse);;
             continue;   
         }
-        if (*commandLength == 1){
+        if (commandLength == 1){
             if(strcmp(currentCommand[0], "!!") == 0){
-                getNthHistory(-1,&currentCommand, 0);
+                getNthHistory(-1,&currentCommand, 0, &commandLength, &background);
                 addToHistory =0;
             }
 
@@ -181,11 +205,11 @@ int main(){
                 char numberStr[strlen(currentCommand[0])];
                 strcpy(numberStr, currentCommand[0]+1); // removing !
                 int number = atoi(numberStr);
-                int success = getNthHistory(number,&currentCommand, 1);
+                int success = getNthHistory(number,&currentCommand, 1, &commandLength, &background);
                 if (!success){ //e.g number too high 
  
                     printf("Please enter a valid history number\n");
-                    for (int i = 0; i < *commandLength; i++){
+                    for (int i = 0; i < commandLength; i++){
                             free(currentCommand[i]);
                     }
                         free(currentCommand);
@@ -199,11 +223,11 @@ int main(){
                 char numberStr[strlen(currentCommand[0])];
                 strcpy(numberStr, currentCommand[0]+2); // removing !-
                 int number = atoi(numberStr);
-                int success = getNthHistory(number,&currentCommand, 0);
+                int success = getNthHistory(number,&currentCommand, 0, &commandLength, &background);
                 if (!success){ //e.g number too high 
  
                     printf("Please enter a valid history number\n");
-                    for (int i = 0; i < *commandLength; i++){
+                    for (int i = 0; i < commandLength; i++){
                             free(currentCommand[i]);
                     }
                         free(currentCommand);
@@ -215,28 +239,39 @@ int main(){
 
         }
 
-
+        pid_t parentPid = getpid();
         pid_t pid = fork();
+
+        if (background == TRUE){
+            tcsetpgrp(1, parentPid);
+        }
         if (pid == 0){
-            char * args[*commandLength+1];
+            setpgid(getpid(),getpid());
+            if (background == FALSE){
+                tcsetpgrp(1,getpid());
+            }
+            char * args[commandLength+1];
             // printf("CommnadLen %d \n", *commandLength);
-            for (int i = 0; i < *commandLength; i++){
+            for (int i = 0; i < commandLength; i++){
                 args[i] = currentCommand[i];
                 // printf("arg %d: %s \n", i,args[i]);
             }
-            args[*commandLength] = NULL;
+            args[commandLength] = NULL;
             int success = execvp(currentCommand[0],args);
             perror("Error: ");
             exit(1);
         } else {
+            if (background == FALSE){
             waitpid(pid,&status, 0);
-            if(status == 0 && addToHistory) add_history(commandToParse);
+            }
+            if(addToHistory) add_history(commandToParse);
         }
 
-        for (int i = 0; i < *commandLength; i++){
+        for (int i = 0; i < commandLength; i++){
             free(currentCommand[i]);
         }
         free(currentCommand);
         free(commandToParse);
     }
 }
+
