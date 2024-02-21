@@ -4,6 +4,7 @@
         "common.h": "c",
         "pthread.h": "c",
         "sighandlers.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "list.h": "c"
     }
 }

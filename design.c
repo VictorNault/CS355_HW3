@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 //including the linked list data structure
-#include <List.h>
+#include "List.h"
 
 pid_t pid;
 

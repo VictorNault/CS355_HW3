@@ -2,8 +2,7 @@
 
 char * delimiters = " \n";
 int cmdLen  = 0;
-
-
+List * processes;
 
 char ** splitStringFromDelims(char * stringToSplit, int * cmdLen, int * background){
     *background = 0; 
@@ -45,6 +44,7 @@ char ** splitStringFromDelims(char * stringToSplit, int * cmdLen, int * backgrou
 
     else if(tokenList[(*cmdLen)-1][strlen(tokenList[(*cmdLen)-1])-1] == '&' && strlen(tokenList[(*cmdLen)-1]) > 1){
         tokenList[(*cmdLen)-1][strlen(tokenList[(*cmdLen)-1])-1] = '\0';
+        *background = TRUE;
 
     }
 
@@ -106,7 +106,8 @@ int main(){
     my_sigaction.sa_flags = SA_SIGINFO; //setting the flag to say we want more information
     my_sigaction.sa_mask = *sigset;
     sigaction(SIGCHLD,&my_sigaction,NULL); //this is like signal(), setting a handler for SIGCHLD
-    
+
+    processes = newList();
 
     //attempt to do get and set histsize environment variable.
 
@@ -129,7 +130,7 @@ int main(){
     while(1){
         int addToHistory = TRUE;
 
-        char * commandToParse = readline("prompt$ \n");  
+        char * commandToParse = readline("\033[1;32mprompt$ \001\e[0m\002");  
         if (!commandToParse){
             // printf("ctrl-d, exiting...\n");
             exit(0);
@@ -165,6 +166,18 @@ int main(){
             exit(0);
         }
         
+        
+        if(strcmp(currentCommand[0],"jobs") == 0){
+           // print(processes);
+            printJobs(processes);
+            for (int i = 0; i < commandLength; i++){
+                free(currentCommand[i]);
+            }  
+            free(currentCommand);
+            free(commandToParse);
+            continue;
+        }
+        
         if(strcmp(currentCommand[0],"history") == 0){
             HISTORY_STATE * history = history_get_history_state();
             HIST_ENTRY ** histlist = history_list();
@@ -180,7 +193,7 @@ int main(){
 
             free(history);
             free(currentCommand);
-            free(commandToParse);;
+            free(commandToParse);
             continue;   
         }
         if (commandLength == 1){
@@ -231,16 +244,20 @@ int main(){
         pid_t parentPid = getpid();
         pid_t pid = fork();
 
-        if (background == TRUE){
-            tcsetpgrp(1, parentPid);
-        }
         if (pid == 0){
+            
             setpgid(getpid(),getpid());
-            if (background == FALSE){
-                tcsetpgrp(1,getpid());
+            if (background == FALSE){ //process should be foregrounded
+                tcsetpgrp(STDIN_FILENO,getpid());
             }
+            // else{
+            //     tcsetpgrp(1,parentPid);
+
+            // }
             char * args[commandLength+1];
-            // printf("CommnadLen %d \n", *commandLength);
+            // printf("Command Length: %d \n", *commandLength);
+
+            //adding null pointer to end of command string
             for (int i = 0; i < commandLength; i++){
                 args[i] = currentCommand[i];
                 // printf("arg %d: %s \n", i,args[i]);
@@ -248,11 +265,19 @@ int main(){
             args[commandLength] = NULL;
             int success = execvp(currentCommand[0],args);
             perror("Error: ");
-            exit(1);
+            exit(EXIT_FAILURE);
+
         } else {
+            Process_Props * current_process = newProcess_Props(pid, !background, commandToParse);
+            add(processes, current_process); //This doesn ot work since fork creates own address space :(
+            // if (background == TRUE){
+            //     tcsetpgrp(1, parentPid);
+            // }
             if (background == FALSE){
-            waitpid(pid,&status, 0);
+                waitpid(pid,&status, 0);
+                tcsetpgrp(STDIN_FILENO,parentPid);
             }
+
             if(addToHistory) add_history(commandToParse);
         }
 
@@ -263,5 +288,3 @@ int main(){
         free(commandToParse);
     }
 }
-
-//

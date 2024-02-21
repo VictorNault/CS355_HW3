@@ -19,6 +19,9 @@
 #include "List.h"
 #include "List_Extras.h"
 #include "node.h"
+#include "commands.h"
+#include "Process_Props.h"
+
 
 void sigchldhandler(int signal, siginfo_t *info, void *ucontext);
 

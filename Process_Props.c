@@ -1,6 +1,6 @@
 #include <stdlib.h>
-
-#include "Common.h"
+#include <pthread.h>
+#include "common.h"
 #include "Process_Props.h"
 
 Process_Props * newProcess_Props(pid_t pid, int in_foreground, char * starting_command) {

@@ -35,6 +35,15 @@ int myKill(int pid, int sig){
     //send a signal to pid
 }
 
-void jobs(struct node* head){
-    //for loop to print all nodes
+void printJobs(List * processes){
+    struct node * temp = processes->head;
+    int processCount = 1;
+    print(processes);
+    while (temp != NULL){
+        Process_Props * nodeData = temp->data;
+        // printf("%s", nodeData->starting_command);
+        printf("[%d] %d %s\n",processCount, nodeData->is_suspended, nodeData->starting_command);
+        processCount+=1; 
+        temp = temp->next;
+    }
 }

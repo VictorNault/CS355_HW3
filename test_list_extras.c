@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "Common.h"
+#include "common.h"
 #include "List_Extras.h"
 
 #define MYPID1 11

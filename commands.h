@@ -7,5 +7,5 @@
 void bg(int pid);
 void fg(int pid);
 int myKill(int pid, int isSIGKILL);
-
+void printJobs(List * processes);
 #endif
