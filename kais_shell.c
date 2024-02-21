@@ -95,11 +95,10 @@ int getNthHistory(int n, char *** currentCommand, int top, int * cmdlen, int * b
 
 int main(){
     int status;
-    //declaring a sigset that contains every catchable signal except SIGCHLD and SIGUSR1
+    //declaring a sigset that contains every catchable signal except SIGCHLD
     sigset_t *sigset = (sigset_t*) malloc(sizeof(sigset_t));
     sigfillset(sigset);
     sigdelset(sigset,SIGCHLD);
-    sigdelset(sigset,SIGUSR1);
     sigprocmask(SIG_SETMASK,sigset,NULL);
 
     struct sigaction my_sigaction; //declaring the struct that contains the pointer to sighandler with extra information and flag
