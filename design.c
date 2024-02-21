@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 700
 #include "common.h"
 #include <stdio.h>
 #include <unistd.h>
@@ -8,7 +9,8 @@
 #include <string.h>
 #include <pthread.h>
 
-//including the linked list data structure
+//including the linked list data structure. The linked list contains nodes that have fields including the pid, is_foreground, 
+//is_suspended, starting command, and respective methods. 
 #include <List.h>
 
 pid_t pid;
@@ -62,7 +64,7 @@ void sigchldhandler(siginfo_t *siginfo, void *context){
 int main(){
     //define sigaction to mask all signals (sa_mask)
 
-    //set up sighandler for SIGINT 
+    //set up a mask that ignores all signals, except for SIGCHLD
 
     //define a linked list buffer for potential multiple commands in case of semicolon
 
