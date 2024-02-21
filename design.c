@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 700
 #include "common.h"
 #include <stdio.h>
 #include <unistd.h>
@@ -30,14 +31,6 @@ void jobs(){
 
 void kill(int pid, int sig){
     //send a SIGTERM or SIGKILL to a process
-}
-
-void sigtstp(int sig){
-    //send the process running in the foreground into the background
-}
-
-void sighandler(int sig){
-    //don't do anything if the user press Ctrl+C 
 }
 
 //in the sigchldhandler, we will use mutexes to protect the critical region, which is
@@ -84,13 +77,15 @@ int main(){
 
         //child 
         if(pid == 0){
-            //wait for SIGUSR1
+            //entering CR
+            //add the child's process to the linkedlist
+            //exiting CR
             //exec
             //if fails, exit
         }
         //parent
         else{
-            //add the child to linked list, send SIGUSR1 to child to keep going
+            //
 
             //wait for child only if child is in foreground
         }

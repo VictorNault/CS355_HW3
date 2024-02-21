@@ -1,7 +1,8 @@
-#include <unistd.h>
+
 
 #ifndef PROCESS_PROPS_H
 #define PROCESS_PROPS_H
+#include <unistd.h>
 
 typedef struct {
     pid_t pid;
