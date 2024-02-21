@@ -13,6 +13,9 @@ sighandlers.o: sighandlers.h
 kais_shell.o: common.h Process_Props.h List.h commands.h sighandlers.h
 	gcc -c kais_shell.c
 kais_shell: Process_Props.o List.o commands.o node.o
+	make kais_shell.o
+	make sighandlers.o
+	make List_Extras.o
 	gcc -o kais_shell Process_Props.o node.o List.o List_Extras.o commands.o sighandlers.o kais_shell.o -lreadline -lpthread 
 clean: 
 	rm -rf *.o 
