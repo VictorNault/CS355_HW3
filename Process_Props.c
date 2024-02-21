@@ -1,13 +1,13 @@
 #include <stdlib.h>
 
-#include "Common.h"
+#include "common.h"
 #include "Process_Props.h"
 
-Process_Props * newProcess_Props(pid_t pid, int in_foreground, int job_id, char * starting_command, struct termios process_termios) {
+Process_Props * newProcess_Props(pid_t pid, int in_foreground, char * starting_command, struct termios process_termios) {
     Process_Props * new_process_props = malloc(sizeof(Process_Props));
     new_process_props->pid = pid;
     new_process_props->in_foreground = in_foreground;
-    new_process_props->job_id = job_id;
+    new_process_props->job_id = global_job_id_counter++;
     new_process_props->starting_command = starting_command;
     new_process_props->is_suspended = FALSE;
     new_process_props->process_termios;
