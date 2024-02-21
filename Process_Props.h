@@ -4,6 +4,8 @@
 #ifndef PROCESS_PROPS_H
 #define PROCESS_PROPS_H
 
+int global_job_id_counter = 0;
+
 typedef struct {
     pid_t pid;
     int in_foreground;
@@ -13,7 +15,7 @@ typedef struct {
     struct termios process_termios;
 } Process_Props;
 
-Process_Props * newProcess_Props(pid_t pid, int in_foreground, int job_id, char * starting_command, struct termios process_termios);
+Process_Props * newProcess_Props(pid_t pid, int in_foreground, char * starting_command, struct termios process_termios);
 
 // Getters
 pid_t get_pid(Process_Props * input);
