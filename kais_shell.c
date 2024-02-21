@@ -1,4 +1,4 @@
-#include "sighandlers.h"
+#include "common.h"
 
 char * delimiters = " \n";
 int cmdLen  = 0;
