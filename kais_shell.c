@@ -107,6 +107,9 @@ int main(){
     my_sigaction.sa_mask = *sigset;
     sigaction(SIGCHLD,&my_sigaction,NULL); //this is like signal(), setting a handler for SIGCHLD
 
+    struct termios shellTermios;
+    tcgetattr(STDIN_FILENO,&shellTermios); //getting shell's termios
+
     processes = newList();
 
     //attempt to do get and set histsize environment variable.
@@ -240,20 +243,22 @@ int main(){
         
 
         }
+        
 
         pid_t parentPid = getpid();
         pid_t pid = fork();
 
         if (pid == 0){
+            setpgrp();
+            sigset_t newset;
+            sigemptyset(&newset);
+            sigprocmask(SIG_SETMASK,&newset,NULL);
             
-            setpgid(getpid(),getpid());
+
             if (background == FALSE){ //process should be foregrounded
                 tcsetpgrp(STDIN_FILENO,getpid());
             }
-            // else{
-            //     tcsetpgrp(1,parentPid);
-
-            // }
+            
             char * args[commandLength+1];
             // printf("Command Length: %d \n", *commandLength);
 
@@ -268,17 +273,21 @@ int main(){
             exit(EXIT_FAILURE);
 
         } else {
-            Process_Props * current_process = newProcess_Props(pid, !background, commandToParse);
+            
+            setpgid(pid,pid);
+            Process_Props * current_process = newProcess_Props_nt(pid, !background,commandToParse);
             add(processes, current_process); //This doesn ot work since fork creates own address space :(
-            // if (background == TRUE){
-            //     tcsetpgrp(1, parentPid);
-            // }
+            
+            if (background == TRUE){
+                waitpid(pid,&status,WUNTRACED);
+                tcsetpgrp(STDIN_FILENO, parentPid);
+            }
             if (background == FALSE){
                 waitpid(pid,&status, 0);
                 tcsetpgrp(STDIN_FILENO,parentPid);
             }
-
-            if(addToHistory) add_history(commandToParse);
+            
+            add_history(commandToParse);
         }
 
         for (int i = 0; i < commandLength; i++){
