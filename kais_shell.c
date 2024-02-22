@@ -2,7 +2,7 @@
 
 char * delimiters = " \n";
 int cmdLen  = 0;
-List * processes;
+
 
 char ** splitStringFromDelims(char * stringToSplit, int * cmdLen, int * background){
     *background = 0; 
@@ -99,7 +99,7 @@ int main(){
     sigset_t *sigset = (sigset_t*) malloc(sizeof(sigset_t));
     sigfillset(sigset);
     sigdelset(sigset,SIGCHLD);
-    sigprocmask(SIG_SETMASK,sigset,NULL);
+    sigprocmask(SIG_BLOCK,sigset,NULL);
 
     struct sigaction my_sigaction; //declaring the struct that contains the pointer to sighandler with extra information and flag
     my_sigaction.sa_sigaction = sigchldhandler; //setting the sighandler 
@@ -111,7 +111,7 @@ int main(){
     tcgetattr(STDIN_FILENO,&shellTermios); //getting shell's termios
 
     processes = newList();
-
+    free(sigset);
     //attempt to do get and set histsize environment variable.
 
     //long histSize;
@@ -135,7 +135,7 @@ int main(){
 
         char * commandToParse = readline("\033[1;32mprompt$ \001\e[0m\002");  
         if (!commandToParse){
-            // printf("ctrl-d, exiting...\n");
+            printf("\n");
             exit(0);
         } 
 
@@ -253,12 +253,6 @@ int main(){
             sigset_t newset;
             sigemptyset(&newset);
             sigprocmask(SIG_SETMASK,&newset,NULL);
-            
-
-            if (background == FALSE){ //process should be foregrounded
-                tcsetpgrp(STDIN_FILENO,getpid());
-            }
-            
             char * args[commandLength+1];
             // printf("Command Length: %d \n", *commandLength);
 
@@ -269,20 +263,23 @@ int main(){
             }
             args[commandLength] = NULL;
             int success = execvp(currentCommand[0],args);
-            perror("Error: ");
+            
+            perror("Error");
             exit(EXIT_FAILURE);
 
         } else {
-            
             setpgid(pid,pid);
+            
             Process_Props * current_process = newProcess_Props_nt(pid, !background,commandToParse);
             add(processes, current_process); //This doesn ot work since fork creates own address space :(
             
             if (background == TRUE){
-                waitpid(pid,&status,WUNTRACED);
-                tcsetpgrp(STDIN_FILENO, parentPid);
+                tcsetpgrp(STDIN_FILENO,parentPid);
+                waitpid(pid,&status,WNOHANG|WUNTRACED);
+                
             }
-            if (background == FALSE){
+            else{
+                tcsetpgrp(STDIN_FILENO,pid);
                 waitpid(pid,&status, 0);
                 tcsetpgrp(STDIN_FILENO,parentPid);
             }
@@ -295,5 +292,6 @@ int main(){
         }
         free(currentCommand);
         free(commandToParse);
+        
     }
 }

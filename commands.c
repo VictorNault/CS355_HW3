@@ -1,7 +1,19 @@
 #include "commands.h"
 
+
+//might be job id actually
 void bg(int pid){
+    
     //check in the linked list to see if the process is suspended
+
+    // also don't think we need to update is_suspended flag here since child will signal
+    pthread_mutex_lock(&mutex);
+    Process_Props * process = get_by_pid(processes,pid);
+    pthread_mutex_unlock(&mutex);
+
+    if(process->is_suspended){
+        kill(process->pid,SIGCONT);
+    }
     //int is_suspended = 
     // if(is_suspended){
     //     kill(pid,SIGCONT);
@@ -13,6 +25,23 @@ void bg(int pid){
 }
 
 void fg(int pid){
+    pthread_mutex_lock(&mutex);
+    Process_Props * process = get_by_pid(processes,pid);
+    pthread_mutex_unlock(&mutex);
+
+    if (process->is_suspended == TRUE){
+        kill(process->pid, SIGCONT);
+        tcsetpgrp(STDIN_FILENO, pid);
+    }
+    else{
+        tcsetpgrp(1,pid);
+    }
+
+
+    //same here as comment above // process->is_suspended = FALSE;
+    process->in_foreground = TRUE;
+    waitpid(process->pid,NULL,0);
+
     //check in the linked list to see if the process is suspended
     //int is_suspended = 
     // if(is_suspended){
@@ -38,12 +67,5 @@ int myKill(int pid, int sig){
 void printJobs(List * processes){
     struct node * temp = processes->head;
     int processCount = 1;
-    print(processes);
-    while (temp != NULL){
-        Process_Props * nodeData = temp->data;
-        // printf("%s", nodeData->starting_command);
-        printf("[%d] %d %s\n",processCount, nodeData->is_suspended, nodeData->starting_command);
-        processCount+=1; 
-        temp = temp->next;
-    }
+    print_processes(processes);
 }

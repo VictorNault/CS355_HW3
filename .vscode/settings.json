@@ -7,6 +7,8 @@
         "types.h": "c",
         "list.h": "c",
         "signal.h": "c",
-        "readline.h": "c"
+        "readline.h": "c",
+        "termios.h": "c",
+        "stdlib.h": "c"
     }
 }

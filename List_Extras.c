@@ -1,5 +1,6 @@
 #include <stdlib.h>
-
+#include <stdio.h>
+#include "common.h"
 #include "node.h"
 #include "List_Extras.h"
 
@@ -47,4 +48,15 @@ Process_Props * get_by_pid(const List *l, pid_t pid) {
     }
     // If the process cannot be found, return NULL
     return NULL;
+}
+
+void print_processes(List *l) {
+    struct node *n = l->head;
+    printf("Size of process table is: %d\n", l->size);
+    char to_print[TOSTRING_SIZE];
+    while (n != NULL) {
+        toString(n->data, to_print, TOSTRING_SIZE);
+        printf("%s\n", to_print);
+        n = n->next;
+    }
 }

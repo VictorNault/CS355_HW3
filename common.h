@@ -3,6 +3,7 @@
 #define _XOPEN_SOURCE 700
 #define TRUE 1
 #define FALSE 0
+#define TOSTRING_SIZE 1024
 
 #include <pthread.h>
 #include "List.h"
@@ -25,5 +26,7 @@
 #include <signal.h>
 #include <termios.h>
 
+pthread_mutex_t mutex; //defining the mutex
+List * processes;
 
 #endif

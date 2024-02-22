@@ -1,7 +1,6 @@
 #include <unistd.h>
 #include <termios.h>
-#include <pthread.h>
-
+#include "common.h"
 #ifndef PROCESS_PROPS_H
 #define PROCESS_PROPS_H
 
@@ -12,7 +11,7 @@ typedef struct {
     int in_foreground;
     int is_suspended;
     int job_id;
-    char * starting_command;
+    char starting_command[TOSTRING_SIZE];
     struct termios process_termios;
 } Process_Props;
 
@@ -32,6 +31,6 @@ void set_in_foreground(Process_Props * input, int to_set);
 void set_is_suspended(Process_Props * input, int to_set);
 void set_process_termios(Process_Props * input, struct termios to_set);
 
-
+void toString(Process_Props * input, char * output, int output_size);
 
 #endif
