@@ -30,6 +30,6 @@ void set_in_foreground(Process_Props * input, int to_set);
 void set_is_suspended(Process_Props * input, int to_set);
 void set_process_termios(Process_Props * input, struct termios to_set);
 
-
+void toString(Process_Props * input, char * output, int output_size);
 
 #endif
