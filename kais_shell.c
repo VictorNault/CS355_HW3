@@ -2,6 +2,42 @@
 
 char * delimiters = " \n";
 int cmdLen  = 0;
+List * processes;
+
+
+// to do remove leading and trailing white spaces
+char ** splitSemiColon(char * stringToSplit, int * numCmds){
+    char * stringToSplitCopy = malloc( sizeof(char) * (strlen(stringToSplit)+1));
+    strcpy(stringToSplitCopy, stringToSplit); 
+    char * token = strtok(stringToSplitCopy,";");
+    printf("first Token %s\n", token);
+    *numCmds = 0;
+    while (token != NULL){
+        (*numCmds)++;
+        token = strtok(NULL,";");
+        printf("first Token %s\n", token);
+    }
+    if (*numCmds == 0){ //nothing was passed
+        return NULL;
+    }
+    free(stringToSplitCopy);
+
+
+    char ** commands = malloc(sizeof(char*) * (*numCmds));
+    stringToSplitCopy = malloc( sizeof(char) * (strlen(stringToSplit)+1));
+    strcpy(stringToSplitCopy, stringToSplit); 
+    token = strtok(stringToSplitCopy,";");
+    commands[0] = malloc(sizeof(char) * strlen(token)+1);
+    strcpy(commands[0], token);
+    for (int i = 1; i < *numCmds; i++){
+        token = strtok(NULL,";");
+        commands[i] = malloc(sizeof(char) * strlen(token)+1);
+        strcpy(commands[i], token);
+    }
+    free(stringToSplitCopy);
+    return commands;
+
+}
 
 
 char ** splitStringFromDelims(char * stringToSplit, int * cmdLen, int * background){
@@ -35,6 +71,7 @@ char ** splitStringFromDelims(char * stringToSplit, int * cmdLen, int * backgrou
     //checking if it should be backgrounded:
     if (strcmp(tokenList[(*cmdLen)-1],"&") == 0 && *cmdLen > 1 ){
         *background = TRUE;
+        free(tokenList[(*cmdLen)-1]); //freeing malloced &
         tokenList[(*cmdLen)-1] = NULL;
         // char ** temp = (char ** ) malloc(sizeof(char *) * ((*cmdLen)-1));
         // for(int i = 0; i < *cmdLen; i++){
@@ -47,7 +84,6 @@ char ** splitStringFromDelims(char * stringToSplit, int * cmdLen, int * backgrou
         *background = TRUE;
 
     }
-
     // for (int i = 0; i < count; i++){
     //     printf("%s testing", tokenList[i]);
     // }
@@ -130,18 +166,27 @@ int main(){
 
     int compare = regcomp(&nregex,"^![0-9]+$",REG_EXTENDED); //match numbers after ! \b is word boundry
     int dashCompare = regcomp(&dashNRegex,"^!-[0-9]+$",REG_EXTENDED);
-    while(1){
+    while(TRUE){
         int addToHistory = TRUE;
 
-        char * commandToParse = readline("\033[1;32mprompt$ \001\e[0m\002");  
+        char * commandToParse = readline("\033[1;32mprompt$ \001\e[0m\002"); 
+        if (commandToParse == NULL){
+            free(commandToParse);
+            continue;
+        }
+
         if (!commandToParse){
             printf("\n");
             exit(0);
         } 
-
-        char * commandCopy = malloc( sizeof(char) * (strlen(commandToParse)+1)); // making a copy because of how readline handles history
+        int numCmds;
+        char ** commandList = splitSemiColon(commandToParse, &numCmds);
+        printf("commands parsed %d\n", numCmds);
+        for (int i = 0; i < numCmds; i++){
+        
+        char * commandCopy = malloc( sizeof(char) * (strlen(commandList[i])+1)); // making a copy because of how readline handles history
         // beacuse strtok replaces with null byte
-        strcpy(commandCopy, commandToParse);
+        strcpy(commandCopy, commandList[i]);
         int commandLength; //split string from delim
         int background;
         char ** currentCommand = splitStringFromDelims(commandCopy, &commandLength, &background);
@@ -154,7 +199,7 @@ int main(){
                 free(currentCommand[i]);
             }
             free(currentCommand);
-            free(commandToParse);
+            free(commandList[i]);
 
 
             HISTORY_STATE * history = history_get_history_state();
@@ -177,7 +222,7 @@ int main(){
                 free(currentCommand[i]);
             }  
             free(currentCommand);
-            free(commandToParse);
+            free(commandList[i]);
             continue;
         }
         
@@ -196,7 +241,7 @@ int main(){
 
             free(history);
             free(currentCommand);
-            free(commandToParse);
+            free(commandList[i]);
             continue;   
         }
         if (commandLength == 1){
@@ -218,7 +263,7 @@ int main(){
                             free(currentCommand[i]);
                     }
                         free(currentCommand);
-                        free(commandToParse);
+                        free(commandList[i]);
                         continue;
                 }
             }
@@ -236,7 +281,7 @@ int main(){
                             free(currentCommand[i]);
                     }
                         free(currentCommand);
-                        free(commandToParse);
+                        free(commandList[i]);
                         continue;
                 }
             }
@@ -264,13 +309,13 @@ int main(){
             args[commandLength] = NULL;
             int success = execvp(currentCommand[0],args);
             
-            perror("Error");
+            perror("\033[0;31mError\001\e[0m\002");
             exit(EXIT_FAILURE);
 
         } else {
             setpgid(pid,pid);
             
-            Process_Props * current_process = newProcess_Props_nt(pid, !background,commandToParse);
+            Process_Props * current_process = newProcess_Props_nt(pid, !background,commandList[i]);
             add(processes, current_process); //This doesn ot work since fork creates own address space :(
             
             if (background == TRUE){
@@ -284,14 +329,16 @@ int main(){
                 tcsetpgrp(STDIN_FILENO,parentPid);
             }
             
-            add_history(commandToParse);
+            add_history(commandList[i]);
         }
 
         for (int i = 0; i < commandLength; i++){
             free(currentCommand[i]);
         }
         free(currentCommand);
+        free(commandList[i]);
+        }
+        free(commandList);
         free(commandToParse);
-        
     }
 }

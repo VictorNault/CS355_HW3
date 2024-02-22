@@ -25,8 +25,8 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <termios.h>
+extern List * processes;
+extern pthread_mutex_t mutex; //defining the mutex
 
-pthread_mutex_t mutex; //defining the mutex
-List * processes;
 
 #endif

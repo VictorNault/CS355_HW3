@@ -1,5 +1,7 @@
 #include "sighandlers.h"
 
+pthread_mutex_t mutex;
+
 void sigchldhandler(int signal, siginfo_t *info, void *ucontext){
     if(info->si_code == CLD_EXITED || info->si_code == CLD_DUMPED){ //si_code in the info struct contains if the child is suspended, exited, or interrupted...
         //Entering critical region
