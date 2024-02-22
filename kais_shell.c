@@ -10,18 +10,15 @@ char ** splitSemiColon(char * stringToSplit, int * numCmds){
     char * stringToSplitCopy = malloc( sizeof(char) * (strlen(stringToSplit)+1));
     strcpy(stringToSplitCopy, stringToSplit); 
     char * token = strtok(stringToSplitCopy,";");
-    printf("first Token %s\n", token);
     *numCmds = 0;
     while (token != NULL){
         (*numCmds)++;
         token = strtok(NULL,";");
-        printf("first Token %s\n", token);
     }
     if (*numCmds == 0){ //nothing was passed
         return NULL;
     }
     free(stringToSplitCopy);
-
 
     char ** commands = malloc(sizeof(char*) * (*numCmds));
     stringToSplitCopy = malloc( sizeof(char) * (strlen(stringToSplit)+1));
@@ -181,7 +178,6 @@ int main(){
         } 
         int numCmds;
         char ** commandList = splitSemiColon(commandToParse, &numCmds);
-        printf("commands parsed %d\n", numCmds);
         for (int i = 0; i < numCmds; i++){
         
         char * commandCopy = malloc( sizeof(char) * (strlen(commandList[i])+1)); // making a copy because of how readline handles history
