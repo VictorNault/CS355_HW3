@@ -12,6 +12,7 @@
 #include "commands.h"
 #include "Process_Props.h"
 #include "sighandlers.h"
+#include "string_extras.h"
 #include <regex.h>
 #include <unistd.h>
 #include <string.h>

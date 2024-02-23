@@ -136,7 +136,7 @@ int main(){
 
     struct sigaction my_sigaction; //declaring the struct that contains the pointer to sighandler with extra information and flag
     my_sigaction.sa_sigaction = sigchldhandler; //setting the sighandler 
-    my_sigaction.sa_flags = SA_SIGINFO; //setting the flag to say we want more information
+    my_sigaction.sa_flags = SA_SIGINFO | SA_RESTART; //setting the flag to say we want more information
     my_sigaction.sa_mask = *sigset;
     sigaction(SIGCHLD,&my_sigaction,NULL); //this is like signal(), setting a handler for SIGCHLD
 
@@ -165,7 +165,7 @@ int main(){
     int dashCompare = regcomp(&dashNRegex,"^!-[0-9]+$",REG_EXTENDED);
     while(TRUE){
         int addToHistory = TRUE;
-
+        // printf("\033[1;32m%s$\001\e[0m\002", getenv("USER")); // trying different prompt string
         char * commandToParse = readline("\033[1;32mprompt$ \001\e[0m\002"); 
         if (commandToParse == NULL){
             free(commandToParse);
@@ -179,6 +179,9 @@ int main(){
         int numCmds;
         char ** commandList = splitSemiColon(commandToParse, &numCmds);
         for (int i = 0; i < numCmds; i++){
+        char * trimmedCommand = trimStr(commandList[i]);
+        free(commandList[i]);
+        commandList[i] = trimmedCommand;
         
         char * commandCopy = malloc( sizeof(char) * (strlen(commandList[i])+1)); // making a copy because of how readline handles history
         // beacuse strtok replaces with null byte
@@ -321,7 +324,9 @@ int main(){
             }
             else{
                 tcsetpgrp(STDIN_FILENO,pid);
+                tcgetattr(STDIN_FILENO,&current_process->process_termios); //getting shell's termios
                 waitpid(pid,&status, 0);
+                tcsetattr(STDIN_FILENO, TCSANOW ,&shellTermios);
                 tcsetpgrp(STDIN_FILENO,parentPid);
             }
             
