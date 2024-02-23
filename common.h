@@ -28,6 +28,7 @@
 #include <termios.h>
 extern List * processes;
 extern pthread_mutex_t mutex; //defining the mutex
-
+extern int shellPid;
+extern struct termios shelltermios;
 
 #endif

@@ -33,13 +33,16 @@ void fg(int pid){
         tcsetpgrp(STDIN_FILENO, pid);
     }
     else{
-        tcsetpgrp(1,pid);
+        tcsetpgrp(STDIN_FILENO,pid);
     }
 
 
     //same here as comment above // process->is_suspended = FALSE;
     process->in_foreground = TRUE;
-    waitpid(process->pid,NULL,0);
+    tcsetattr(STDIN_FILENO,TCSANOW, &process->process_termios);
+    waitpid(process->pid,NULL,WUNTRACED);
+    tcsetattr(STDIN_FILENO,TCSANOW, &shellTermios);
+    tcsetpgrp(STDIN_FILENO, shellPid);
 
     //check in the linked list to see if the process is suspended
     //int is_suspended = 
@@ -60,7 +63,12 @@ void fg(int pid){
 }
 
 int myKill(int pid, int sig){
-    //send a signal to pid
+    int success = kill(pid,sig);
+    if (success) return success;
+    else{
+        perror("kill:");
+        return success;
+    }
 }
 
 void printJobs(List * processes){
