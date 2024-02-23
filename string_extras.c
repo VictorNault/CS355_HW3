@@ -2,6 +2,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+
+/**
+ * Accepts a str as a parameter removes leading and trailing white space as a malloced copy.
+*/
 char * trimStr(char * str){
     int len = strlen(str)-1;
     int inc = 0;
