@@ -2,7 +2,7 @@
 
 char * delimiters = " \n";
 int cmdLen  = 0;
-List * processes;
+pid_t shellPid;
 
 
 // to do remove leading and trailing white spaces
@@ -128,6 +128,8 @@ int getNthHistory(int n, char *** currentCommand, int top, int * cmdlen, int * b
 
 int main(){
     int status;
+    shellPid = getpid();
+
     //declaring a sigset that contains every catchable signal except SIGCHLD
     sigset_t *sigset = (sigset_t*) malloc(sizeof(sigset_t));
     sigfillset(sigset);
@@ -140,7 +142,6 @@ int main(){
     my_sigaction.sa_mask = *sigset;
     sigaction(SIGCHLD,&my_sigaction,NULL); //this is like signal(), setting a handler for SIGCHLD
 
-    struct termios shellTermios;
     tcgetattr(STDIN_FILENO,&shellTermios); //getting shell's termios
 
     processes = newList();
@@ -167,15 +168,17 @@ int main(){
         int addToHistory = TRUE;
         // printf("\033[1;32m%s$\001\e[0m\002", getenv("USER")); // trying different prompt string
         char * commandToParse = readline("\033[1;32mprompt$ \001\e[0m\002"); 
-        if (commandToParse == NULL){
-            free(commandToParse);
-            continue;
-        }
-
         if (!commandToParse){
             printf("\n");
-            exit(0);
+            exit(EXIT_SUCCESS);
         } 
+
+        // if (commandToParse == NULL){
+        //     free(commandToParse);
+        //     continue;
+        // }
+
+
         int numCmds;
         char ** commandList = splitSemiColon(commandToParse, &numCmds);
         for (int i = 0; i < numCmds; i++){
@@ -224,6 +227,28 @@ int main(){
             free(commandList[i]);
             continue;
         }
+
+        if(strcmp(currentCommand[0],"fg") == 0){
+            //printf("%d",currentCommand[1]);
+            fg(atoi(currentCommand[1]));
+            for (int i = 0; i < commandLength; i++){
+                free(currentCommand[i]);
+            }  
+            free(currentCommand);
+            free(commandList[i]);
+            continue;
+        }
+
+        if(strcmp(currentCommand[0],"bg") == 0){
+            bg(atoi(currentCommand[1]));
+            for (int i = 0; i < commandLength; i++){
+                free(currentCommand[i]);
+            }  
+            free(currentCommand);
+            free(commandList[i]);
+            continue;
+        }
+        
         
         if(strcmp(currentCommand[0],"history") == 0){
             HISTORY_STATE * history = history_get_history_state();
@@ -289,7 +314,6 @@ int main(){
         }
         
 
-        pid_t parentPid = getpid();
         pid_t pid = fork();
 
         if (pid == 0){
@@ -313,21 +337,22 @@ int main(){
 
         } else {
             setpgid(pid,pid);
+            printf("Pid: %d\n",pid);
             
             Process_Props * current_process = newProcess_Props_nt(pid, !background,commandList[i]);
             add(processes, current_process); //This doesn ot work since fork creates own address space :(
             
             if (background == TRUE){
-                tcsetpgrp(STDIN_FILENO,parentPid);
+                tcsetpgrp(STDIN_FILENO,shellPid);
                 waitpid(pid,&status,WNOHANG|WUNTRACED);
                 
             }
             else{
                 tcsetpgrp(STDIN_FILENO,pid);
                 tcgetattr(STDIN_FILENO,&current_process->process_termios); //getting shell's termios
-                waitpid(pid,&status, 0);
+                waitpid(pid,&status,WUNTRACED);
                 tcsetattr(STDIN_FILENO, TCSANOW ,&shellTermios);
-                tcsetpgrp(STDIN_FILENO,parentPid);
+                tcsetpgrp(STDIN_FILENO,shellPid);
             }
             
             add_history(commandList[i]);

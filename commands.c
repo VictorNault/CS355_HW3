@@ -10,9 +10,15 @@ void bg(int pid){
     Process_Props * process = get_by_pid(processes,pid);
     pthread_mutex_unlock(&mutex);
 
+    if(!process){
+        printf("%d: process not found\n");
+        return;
+    }
+
     if(process->is_suspended){
         kill(process->pid,SIGCONT);
     }
+
     //int is_suspended = 
     // if(is_suspended){
     //     kill(pid,SIGCONT);
@@ -28,18 +34,27 @@ void fg(int pid){
     Process_Props * process = get_by_pid(processes,pid);
     pthread_mutex_unlock(&mutex);
 
+    if(!process){
+        printf("%d: process not found\n");
+        return;
+    }
+
     if (process->is_suspended == TRUE){
         kill(process->pid, SIGCONT);
         tcsetpgrp(STDIN_FILENO, pid);
     }
     else{
-        tcsetpgrp(1,pid);
+        tcsetpgrp(STDIN_FILENO,pid);
     }
 
 
     //same here as comment above // process->is_suspended = FALSE;
     process->in_foreground = TRUE;
-    waitpid(process->pid,NULL,0);
+    // tcsetattr(STDIN_FILENO,TCSANOW, &process->process_termios);
+    waitpid(process->pid,NULL,WUNTRACED);
+    tcsetpgrp(STDIN_FILENO, shellPid);
+    tcsetattr(STDIN_FILENO,TCSANOW, &shellTermios);
+    
 
     //check in the linked list to see if the process is suspended
     //int is_suspended = 
@@ -60,7 +75,12 @@ void fg(int pid){
 }
 
 int myKill(int pid, int sig){
-    //send a signal to pid
+    int success = kill(pid,sig);
+    if (success) return success;
+    else{
+        perror("kill:");
+        return success;
+    }
 }
 
 void printJobs(List * processes){
