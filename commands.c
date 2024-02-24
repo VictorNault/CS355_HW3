@@ -11,12 +11,13 @@ void bg(int pid){
     pthread_mutex_unlock(&mutex);
 
     if(!process){
-        printf("%d: process not found\n");
+        printf("%d: process not found\n",pid);
         return;
     }
 
     if(process->is_suspended){
         kill(process->pid,SIGCONT);
+        set_is_suspended(process,FALSE);
     }
 
     //int is_suspended = 
@@ -35,12 +36,13 @@ void fg(int pid){
     pthread_mutex_unlock(&mutex);
 
     if(!process){
-        printf("%d: process not found\n");
+        printf("%d: process not found\n",pid);
         return;
     }
 
     if (process->is_suspended == TRUE){
         kill(process->pid, SIGCONT);
+        set_is_suspended(process,FALSE);
         tcsetpgrp(STDIN_FILENO, pid);
     }
     else{

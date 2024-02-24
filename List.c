@@ -43,15 +43,15 @@ void deleteHead(List *l) { // Delete the head element
 } // deleteHead()
 
 
-void print(const List *l) {
-    struct node *n = l->head;
-    printf("L(%d) = ", l->size);
-    while (n != NULL) {
-        printf("%d ", n->data);
-        n = n->next;
-    }
-    printf("\n");
-} // print()
+// void print(const List *l) {
+//     struct node *n = l->head;
+//     printf("L(%d) = ", l->size);
+//     while (n != NULL) {
+//         printf("%d ", n->data);
+//         n = n->next;
+//     }
+//     printf("\n");
+// } // print()
 
 void * get(const List *l, int index) {// Returns item at index in list-l
     if (index < 0 || index >= l->size) {

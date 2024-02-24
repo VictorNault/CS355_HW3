@@ -6,21 +6,18 @@
 
 
 int delete_process(List *l, Process_Props * process) {
-
-    Process_Props * node_data;
-    struct node *last_n = l->head;
-    struct node *n = l->head->next;
-    node_data = n->data;
-
     // Check if the head is the process in question
     if ((l->head) == NULL) {
         return -1;
     }
-    if ((node_data->pid) == (process->pid)) {
-        // TODO terminate process
-        l->head = l->head->next;
-        return 0;
+    Process_Props * node_data;
+    struct node *last_n = l->head;
+    struct node *n = l->head->next;
+    if(n == NULL){
+        deleteHead(l);
+        return 1;
     }
+    node_data = n->data;
 
     while (n != NULL) {
         node_data = n->data;

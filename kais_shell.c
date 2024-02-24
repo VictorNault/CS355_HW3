@@ -337,15 +337,13 @@ int main(){
 
         } else {
             setpgid(pid,pid);
-            printf("Pid: %d\n",pid);
-            
             Process_Props * current_process = newProcess_Props_nt(pid, !background,commandList[i]);
             add(processes, current_process); //This doesn ot work since fork creates own address space :(
             
             if (background == TRUE){
                 tcsetpgrp(STDIN_FILENO,shellPid);
+                printf("[%d]    %d\n",current_process->job_id,current_process->pid);
                 waitpid(pid,&status,WNOHANG|WUNTRACED);
-                
             }
             else{
                 tcsetpgrp(STDIN_FILENO,pid);
