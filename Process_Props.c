@@ -7,7 +7,7 @@
 
 #define BOOLSTRING_SIZE 6
 
-int global_job_id_counter = 0;
+int global_job_id_counter = 1;
 
 Process_Props * newProcess_Props(pid_t pid, int in_foreground, char * starting_command, struct termios process_termios) {
     Process_Props * new_process_props = malloc(sizeof(Process_Props));

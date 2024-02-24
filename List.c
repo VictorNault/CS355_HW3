@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include "List.h"
 #include "node.h"
+#include "common.h"
+#include <signal.h>
 
 List * newList() { // Creates a new empty list
     List *L = malloc(sizeof(List));
@@ -70,6 +72,9 @@ void clear(List *l) { // removes all items from list-l
     struct node *nxt;
     while (n != NULL) { // Visit each node and recycle it
         nxt = n->next;
+        Process_Props *Data = n->data;
+        kill(Data->pid,SIGKILL);
+        free(n->data);
         free(n);
         n = nxt;
     }

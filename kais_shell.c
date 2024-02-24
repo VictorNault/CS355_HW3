@@ -1,7 +1,6 @@
 #include "common.h"
 
 char * delimiters = " \n";
-int cmdLen  = 0;
 pid_t shellPid;
 
 
@@ -89,7 +88,7 @@ char ** splitStringFromDelims(char * stringToSplit, int * cmdLen, int * backgrou
     return tokenList;
 }
 
-int getNthHistory(int n, char *** currentCommand, int top, int * cmdlen, int * background){
+int getNthHistory(int n, char *** currentCommand, int top, int * cmdLen, int * background){
         HISTORY_STATE * history = history_get_history_state();
         HIST_ENTRY ** histlist = history_list();
         char * commandToCopy;
@@ -111,14 +110,14 @@ int getNthHistory(int n, char *** currentCommand, int top, int * cmdlen, int * b
         
         char * commandCopy = malloc( sizeof(char) * (strlen(commandToCopy)+1)); // making a copy because of how readline handles history
         strcpy(commandCopy, commandToCopy);
-        for (int i = 0; i < cmdLen; i++){
+        for (int i = 0; i < *cmdLen; i++){
         free(*currentCommand[i]);
         }
 
         free(*currentCommand);
         printf("%s\n",commandCopy);
-        *currentCommand = splitStringFromDelims(commandCopy, cmdlen, background);
-        for (int i = 0; i < cmdLen; i++){
+        *currentCommand = splitStringFromDelims(commandCopy, cmdLen, background);
+        for (int i = 0; i < *cmdLen; i++){
             // printf("\n%d: %s\n",i,currentCommand[i]);
         }
         free(commandCopy);
@@ -197,12 +196,13 @@ int main(){
         if (currentCommand == NULL) continue;
 
         if (strcmp(currentCommand[0],"exit") == 0) {
+            
             for (int i = 0; i < commandLength; i++){
                 free(currentCommand[i]);
             }
             free(currentCommand);
             free(commandList[i]);
-
+            clear(processes);
 
             HISTORY_STATE * history = history_get_history_state();
             HIST_ENTRY ** histlist = history_list();
@@ -230,7 +230,12 @@ int main(){
 
         if(strcmp(currentCommand[0],"fg") == 0){
             //printf("%d",currentCommand[1]);
-            fg(atoi(currentCommand[1]));
+            if(commandLength == 1){
+                fg(-1); //-1 means most recent, implemented in the fg function
+            }else{
+                fg(atoi(currentCommand[1]));
+            }
+            
             for (int i = 0; i < commandLength; i++){
                 free(currentCommand[i]);
             }  
@@ -240,7 +245,11 @@ int main(){
         }
 
         if(strcmp(currentCommand[0],"bg") == 0){
-            bg(atoi(currentCommand[1]));
+            if(commandLength == 1){
+                bg(-1); //-1 means most recent, implemented in the fg function
+            }else{
+                bg(atoi(currentCommand[1]));
+            }
             for (int i = 0; i < commandLength; i++){
                 free(currentCommand[i]);
             }  
@@ -249,6 +258,47 @@ int main(){
             continue;
         }
         
+          if(strcmp(currentCommand[0],"kill") == 0){
+            int killStatus;
+            if(commandLength == 1){
+                printf("\033[0;31mError:\001\e[0m\002 Kill needs more than 1 parameter\n"); //-1 means most recent, implemented in the fg function
+            }
+            else if(commandLength == 2){
+                int job_to_kill = atoi(currentCommand[1]);
+                if (job_to_kill <= 0){
+                    printf("\033[0;31mError:\001\e[0m\002 Invalid job_id\n");
+                    for (int i = 0; i < commandLength; i++){
+                        free(currentCommand[i]);
+                    }  
+                    free(currentCommand);
+                    free(commandList[i]);
+                    continue;
+                }
+                killStatus = myKill(job_to_kill, FALSE); // sending sig term
+                if (killStatus == -1){
+                    perror("\033[0;31mError\001\e[0m\002");
+                }
+            }
+            else if(commandLength == 3){
+               if (strcmp(currentCommand[1],"-9") == 0 && atoi(currentCommand[2]) != 0){
+                    killStatus= myKill(atoi(currentCommand[2]),TRUE);
+                if (killStatus == -1){
+                    perror("\033[0;31mError\001\e[0m\002");
+                }
+                }
+            else{
+                printf("\033[0;31mError:\001\e[0m\002 Invalid call to kill\n");
+            }
+            }
+            
+            for (int i = 0; i < commandLength; i++){
+                free(currentCommand[i]);
+            }  
+            free(currentCommand);
+            free(commandList[i]);
+            continue;
+        }
+    
         
         if(strcmp(currentCommand[0],"history") == 0){
             HISTORY_STATE * history = history_get_history_state();
@@ -349,7 +399,7 @@ int main(){
                 tcsetpgrp(STDIN_FILENO,pid);
                 tcgetattr(STDIN_FILENO,&current_process->process_termios); //getting shell's termios
                 waitpid(pid,&status,WUNTRACED);
-                tcsetattr(STDIN_FILENO, TCSANOW ,&shellTermios);
+                tcsetattr(STDIN_FILENO, TCSADRAIN ,&shellTermios);
                 tcsetpgrp(STDIN_FILENO,shellPid);
             }
             

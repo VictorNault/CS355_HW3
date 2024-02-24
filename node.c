@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include "node.h"
+#include "common.h"
 
 struct node *newNode(void * item) { // Creates a new node with item
     struct node *n = malloc(sizeof(struct node));
