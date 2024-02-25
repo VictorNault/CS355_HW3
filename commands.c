@@ -48,6 +48,10 @@ void fg(int pid){
     Process_Props * process;
     if(pid == -1){ // most recent
         pthread_mutex_lock(&mutex);
+        if (empty(processes)){ // note tail handling might be off, when testing I originally had if tail = null which gave seg fault should check List_extras.v
+            pthread_mutex_unlock(&mutex);
+            return;
+        }
         process = processes->tail->data;
         pthread_mutex_unlock(&mutex);
     }else{
