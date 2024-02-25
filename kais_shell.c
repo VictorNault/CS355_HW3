@@ -2,7 +2,8 @@
 
 char * delimiters = " \n";
 pid_t shellPid;
-
+List * processes;
+struct termios shellTermios;
 
 // to do remove leading and trailing white spaces
 char ** splitSemiColon(char * stringToSplit, int * numCmds){
@@ -184,6 +185,7 @@ int main(){
         char * trimmedCommand = trimStr(commandList[i]);
         free(commandList[i]);
         commandList[i] = trimmedCommand;
+        add_history(commandList[i]);
         
         char * commandCopy = malloc( sizeof(char) * (strlen(commandList[i])+1)); // making a copy because of how readline handles history
         // beacuse strtok replaces with null byte
@@ -245,10 +247,37 @@ int main(){
         }
 
         if(strcmp(currentCommand[0],"bg") == 0){
+            int job_number;
             if(commandLength == 1){
                 bg(-1); //-1 means most recent, implemented in the fg function
-            }else{
-                bg(atoi(currentCommand[1]));
+            }
+            else if (commandLength == 2)
+            {
+                if ('%' == *currentCommand[1]){
+                    if (strlen(currentCommand[1]) == 1){
+                        bg(-1);
+                    }
+                    else{
+                        char * temp = currentCommand[1] + 1;
+                        job_number = atoi(temp);
+                        if (job_number > 0){
+                            bg(job_number);    
+                        }
+                        else{
+                            printf("\033[0;31mError:\001\e[0m\002 Invalid job_id\n");
+                        }
+                    }
+                }
+                else{
+                    job_number = atoi(currentCommand[1]);
+                    if (job_number > 0){
+                        bg(atoi(currentCommand[1]));
+                    }
+                    else{
+                        printf("\033[0;31mError:\001\e[0m\002 Invalid job_id\n");
+                    }
+                }
+            
             }
             for (int i = 0; i < commandLength; i++){
                 free(currentCommand[i]);
@@ -397,13 +426,13 @@ int main(){
             }
             else{
                 tcsetpgrp(STDIN_FILENO,pid);
-                tcgetattr(STDIN_FILENO,&current_process->process_termios); //getting shell's termios
                 waitpid(pid,&status,WUNTRACED);
+                current_process->hasTermios = TRUE;
                 tcsetattr(STDIN_FILENO, TCSADRAIN ,&shellTermios);
                 tcsetpgrp(STDIN_FILENO,shellPid);
             }
             
-            add_history(commandList[i]);
+            // add_history(commandList[i]);
         }
 
         for (int i = 0; i < commandLength; i++){

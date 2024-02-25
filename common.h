@@ -26,10 +26,10 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <termios.h>
-List * processes;
-pthread_mutex_t mutex; //defining the mutex
-pid_t shellPid;
-struct termios shellTermios;
+extern List * processes;
+extern pthread_mutex_t mutex; //defining the mutex
+extern pid_t shellPid;
+extern struct termios shellTermios;
 
 
 #endif

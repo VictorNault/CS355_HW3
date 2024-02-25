@@ -8,7 +8,12 @@ void bg(int pid){
     // also don't think we need to update is_suspended flag here since child will signal
     Process_Props * process;
     if(pid == -1){ // most recent
+
         pthread_mutex_lock(&mutex);
+        if (empty(processes)){ // note tail handling might be off, when testing I originally had if tail = null which gave seg fault should check List_extras.v
+            pthread_mutex_unlock(&mutex);
+            return;
+        }
         process = processes->tail->data;
         pthread_mutex_unlock(&mutex);
     }else{
@@ -63,7 +68,11 @@ void fg(int pid){
 
     //same here as comment above // process->is_suspended = FALSE;
     process->in_foreground = TRUE;
-    // tcsetattr(STDIN_FILENO,TCSANOW, &process->process_termios);
+    
+    if (process->hasTermios){
+    tcsetattr(STDIN_FILENO,TCSADRAIN, &process->process_termios);
+    }
+    
     waitpid(process->pid,NULL,WUNTRACED);
     tcsetpgrp(STDIN_FILENO, shellPid);
     tcsetattr(STDIN_FILENO,TCSADRAIN, &shellTermios);

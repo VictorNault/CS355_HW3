@@ -12,6 +12,7 @@ typedef struct {
     int is_suspended;
     int job_id;
     char starting_command[TOSTRING_SIZE];
+    int hasTermios;
     struct termios process_termios;
 } Process_Props;
 
