@@ -31,5 +31,6 @@ kais_shell: Process_Props.o List.o commands.o node.o
 	make List_Extras.o
 	make string_extras.o	
 	gcc -o kais_shell Process_Props.o node.o List.o List_Extras.o commands.o sighandlers.o kais_shell.o string_extras.o -lreadline -lpthread 
-	
+	rm -rf *.o 
+	rm -rf *.gch
 

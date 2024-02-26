@@ -170,6 +170,10 @@ int main(){
         char * commandToParse = readline("\033[1;32mprompt$ \001\e[0m\002"); 
         if (!commandToParse){
             printf("\n");
+            sigset = (sigset_t*) malloc(sizeof(sigset_t));
+            sigfillset(sigset);
+            sigprocmask(SIG_BLOCK,sigset,NULL);
+            free(sigset);
             clear(processes);
 
             HISTORY_STATE * history = history_get_history_state();
@@ -215,6 +219,11 @@ int main(){
             }
             free(currentCommand);
             free(commandList[i]);
+            sigset = (sigset_t*) malloc(sizeof(sigset_t));
+            sigfillset(sigset);
+            sigprocmask(SIG_BLOCK,sigset,NULL);
+            free(sigset);
+
             clear(processes);
 
             HISTORY_STATE * history = history_get_history_state();
