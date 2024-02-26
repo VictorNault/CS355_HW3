@@ -16,6 +16,7 @@ Process_Props * newProcess_Props(pid_t pid, int in_foreground, char * starting_c
     new_process_props->job_id = global_job_id_counter++;
     strcpy(new_process_props->starting_command, starting_command);
     new_process_props->is_suspended = FALSE;
+    new_process_props->hasTermios = FALSE;
     new_process_props->process_termios;
 }
 
@@ -25,6 +26,7 @@ Process_Props * newProcess_Props_nt(pid_t pid, int in_foreground, char * startin
     new_process_props->in_foreground = in_foreground;
     new_process_props->job_id = global_job_id_counter++;
     strcpy(new_process_props->starting_command, starting_command);
+    new_process_props->hasTermios = FALSE;
     new_process_props->is_suspended = FALSE;
     
 }

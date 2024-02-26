@@ -2,7 +2,8 @@
 
 char * delimiters = " \n";
 pid_t shellPid;
-
+List * processes;
+struct termios shellTermios;
 
 // to do remove leading and trailing white spaces
 char ** splitSemiColon(char * stringToSplit, int * numCmds){
@@ -169,6 +170,17 @@ int main(){
         char * commandToParse = readline("\033[1;32mprompt$ \001\e[0m\002"); 
         if (!commandToParse){
             printf("\n");
+            clear(processes);
+
+            HISTORY_STATE * history = history_get_history_state();
+            HIST_ENTRY ** histlist = history_list();
+
+            for (int i = 0; i < history->length; i++){
+                free_history_entry(histlist[i]);
+            }
+            free(history);
+            regfree(&nregex);
+            regfree(&dashNRegex);
             exit(EXIT_SUCCESS);
         } 
 
@@ -184,6 +196,7 @@ int main(){
         char * trimmedCommand = trimStr(commandList[i]);
         free(commandList[i]);
         commandList[i] = trimmedCommand;
+        add_history(commandList[i]);
         
         char * commandCopy = malloc( sizeof(char) * (strlen(commandList[i])+1)); // making a copy because of how readline handles history
         // beacuse strtok replaces with null byte
@@ -229,11 +242,41 @@ int main(){
         }
 
         if(strcmp(currentCommand[0],"fg") == 0){
+            int job_number;
+
             //printf("%d",currentCommand[1]);
             if(commandLength == 1){
                 fg(-1); //-1 means most recent, implemented in the fg function
-            }else{
-                fg(atoi(currentCommand[1]));
+            }else if (commandLength == 2){
+                if ('%' == *currentCommand[1]){
+                    if (strlen(currentCommand[1]) == 1)
+                    {
+                        fg(-1);
+                    }                    
+                    else
+                    {
+                    char * temp = currentCommand[1] + 1;
+                        job_number = atoi(temp);
+                        if (job_number > 0){
+                            fg(job_number);    
+                        }
+                        else{
+                        printf("\033[0;31mError:\001\e[0m\002 Invalid job_id\n");
+                        } 
+                }
+            }
+            else{ // just an number was passed
+                job_number = atoi(currentCommand[1]);
+                if (job_number > 0){
+                    fg(atoi(currentCommand[1]));
+                }
+                else{
+                    printf("\033[0;31mError:\001\e[0m\002 Invalid job_id\n");
+                }
+            }
+            }
+            else{
+                printf("\033[0;31mError:\001\e[0m\002 Invalid call to bg\n");
             }
             
             for (int i = 0; i < commandLength; i++){
@@ -245,10 +288,40 @@ int main(){
         }
 
         if(strcmp(currentCommand[0],"bg") == 0){
+            int job_number;
             if(commandLength == 1){
                 bg(-1); //-1 means most recent, implemented in the fg function
-            }else{
-                bg(atoi(currentCommand[1]));
+            }
+            else if (commandLength == 2)
+            {
+                if ('%' == *currentCommand[1]){
+                    if (strlen(currentCommand[1]) == 1){
+                        bg(-1);
+                    }
+                    else{
+                        char * temp = currentCommand[1] + 1;
+                        job_number = atoi(temp);
+                        if (job_number > 0){
+                            bg(job_number);    
+                        }
+                        else{
+                            printf("\033[0;31mError:\001\e[0m\002 Invalid job_id\n");
+                        }
+                    }
+                }
+                else{
+                    job_number = atoi(currentCommand[1]);
+                    if (job_number > 0){
+                        bg(atoi(currentCommand[1]));
+                    }
+                    else{
+                        printf("\033[0;31mError:\001\e[0m\002 Invalid job_id\n");
+                    }
+                }
+            
+            }
+            else{
+                printf("\033[0;31mError:\001\e[0m\002 Invalid call to bg\n");
             }
             for (int i = 0; i < commandLength; i++){
                 free(currentCommand[i]);
@@ -397,13 +470,13 @@ int main(){
             }
             else{
                 tcsetpgrp(STDIN_FILENO,pid);
-                tcgetattr(STDIN_FILENO,&current_process->process_termios); //getting shell's termios
                 waitpid(pid,&status,WUNTRACED);
+                current_process->hasTermios = TRUE;
                 tcsetattr(STDIN_FILENO, TCSADRAIN ,&shellTermios);
                 tcsetpgrp(STDIN_FILENO,shellPid);
             }
             
-            add_history(commandList[i]);
+            // add_history(commandList[i]);
         }
 
         for (int i = 0; i < commandLength; i++){

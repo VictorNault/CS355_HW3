@@ -5,4 +5,6 @@
 
 void sigchldhandler(int signal, siginfo_t *info, void *ucontext);
 
+void dummy(int signal, siginfo_t *info, void *ucontext);
+
 #endif

@@ -1,7 +1,8 @@
 #include "sighandlers.h"
+pthread_mutex_t mutex; //defining the mutex
 
-void sigchldhandler(int signal, siginfo_t *info, void *ucontext){
-    if(info->si_code == CLD_EXITED || info->si_code == CLD_DUMPED || info->si_code == CLD_KILLED){ //si_code in the info struct contains if the child is suspended, exited, or interrupted...
+void dummy(int signal, siginfo_t *info, void *ucontext) {
+    if(info->si_code == CLD_EXITED || info->si_code == CLD_DUMPED || info->si_code == CLD_KILLED){ //si_code in the info struct contai>
         //Entering critical region
         waitpid(info->si_pid,NULL,WNOHANG);
         pthread_mutex_lock(&mutex);
@@ -15,6 +16,10 @@ void sigchldhandler(int signal, siginfo_t *info, void *ucontext){
         pthread_mutex_lock(&mutex);
         Process_Props *process = get_by_pid(processes,info->si_pid);
         set_is_suspended(process,TRUE);
+        if (get_in_foreground(process)){
+            tcgetattr(STDIN_FILENO,&process->process_termios); //getting process's termios
+            process->hasTermios = TRUE;
+        }
         set_in_foreground(process,FALSE);
         pthread_mutex_unlock(&mutex);
     }
@@ -25,4 +30,8 @@ void sigchldhandler(int signal, siginfo_t *info, void *ucontext){
         set_is_suspended(process,FALSE);
         pthread_mutex_unlock(&mutex);
     }
+}
+
+void sigchldhandler(int signal, siginfo_t *info, void *ucontext){
+    dummy(signal, info, ucontext);
 }
